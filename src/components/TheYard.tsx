@@ -87,6 +87,7 @@ export default function TheYard() {
                 </button>
                 <button onClick={() => blockUser(u.id)}
                   title="Block user"
+                  aria-label={`Block ${u.name}`}
                   className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-300 transition-colors">
                   <Ban size={14} />
                 </button>

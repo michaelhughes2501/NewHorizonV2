@@ -121,10 +121,11 @@ export default function AdminDashboard() {
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
                         <button onClick={() => toggleSuspend(u)} title={u.is_suspended ? 'Unsuspend' : 'Suspend'}
+                          aria-label={`${u.is_suspended ? 'Unsuspend' : 'Suspend'} ${u.username}`}
                           className={`p-1.5 rounded-lg transition-colors ${u.is_suspended ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-amber-100 text-amber-600 hover:bg-amber-200'}`}>
                           {u.is_suspended ? <CheckCircle size={14} /> : <XCircle size={14} />}
                         </button>
-                        <button onClick={() => deleteUser(u.id)} className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
+                        <button onClick={() => deleteUser(u.id)} aria-label={`Delete ${u.username}`} className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors">
                           <Trash2 size={14} />
                         </button>
                       </div>

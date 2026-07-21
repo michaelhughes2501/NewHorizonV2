@@ -61,7 +61,7 @@ export default function Journal() {
             {form.is_shared ? 'Visible to community' : 'Private (only you)'}
           </label>
           <div className="flex gap-2">
-            {active && <button onClick={() => del(active.id)} className="p-2 rounded-xl text-red-400 hover:bg-red-50 transition-colors"><Trash2 size={16} /></button>}
+            {active && <button onClick={() => del(active.id)} aria-label="Delete entry" className="p-2 rounded-xl text-red-400 hover:bg-red-50 transition-colors"><Trash2 size={16} /></button>}
             <button onClick={save} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">
               <Save size={14} /> Save Entry
             </button>
