@@ -73,7 +73,7 @@ export default function Vault() {
                 <p className="text-xs text-slate-400 mt-0.5">Added {new Date(d.created_at).toLocaleDateString()}</p>
               </div>
               <span className={`text-[11px] px-2 py-1 rounded-full font-semibold capitalize shrink-0 ${CAT_COLORS[d.category] || CAT_COLORS.general}`}>{d.category}</span>
-              <button onClick={() => del(d.id)} className="p-2 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"><Trash2 size={14} /></button>
+              <button onClick={() => del(d.id)} aria-label={`Delete ${d.title}`} className="p-2 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"><Trash2 size={14} /></button>
             </div>
           ))}
         </div>
