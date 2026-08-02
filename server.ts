@@ -463,7 +463,10 @@ async function startServer() {
       const expires = new Date(Date.now() + 3600000).toISOString();
       db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(user.id);
       db.prepare("INSERT INTO password_resets (token, user_id, expires_at) VALUES (?, ?, ?)").run(resetToken, user.id, expires);
-      res.json({ success: true, _devToken: resetToken });
+      // _devToken is a local-testing convenience only — there is no email provider wired up yet.
+      // Never expose the raw reset token in a real deployment (it's a full account-takeover token).
+      const devPayload = process.env.NODE_ENV !== "production" ? { _devToken: resetToken } : {};
+      res.json({ success: true, ...devPayload });
     } else {
       res.json({ success: true });
     }
