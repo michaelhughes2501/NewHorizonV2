@@ -179,7 +179,7 @@ function MainApp() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center font-black text-lg">N</div>
             <span className="font-bold text-lg tracking-tight">New Horizon</span>
           </div>
-          <button className="md:hidden opacity-60 hover:opacity-100" onClick={() => setIsMenuOpen(false)}>
+          <button className="md:hidden opacity-60 hover:opacity-100" onClick={() => setIsMenuOpen(false)} aria-label="Close menu">
             <X size={20} />
           </button>
         </div>
@@ -240,6 +240,7 @@ function MainApp() {
         <div className="p-4 border-t border-white/10">
           <button
             onClick={logout}
+            aria-label="Sign out"
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all text-sm"
           >
             <LogOut size={16} /> Sign Out
@@ -254,7 +255,7 @@ function MainApp() {
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
         {/* Top bar */}
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-slate-200 px-4 md:px-8 py-3 flex items-center justify-between">
-          <button className="md:hidden p-2 rounded-lg hover:bg-slate-100" onClick={() => setIsMenuOpen(true)}>
+          <button className="md:hidden p-2 rounded-lg hover:bg-slate-100" onClick={() => setIsMenuOpen(true)} aria-label="Open menu">
             <Menu size={20} />
           </button>
           <div className="hidden md:block text-sm font-semibold text-slate-500 capitalize">
@@ -266,6 +267,7 @@ function MainApp() {
               <button
                 onClick={() => setShowNotifications(p => !p)}
                 className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
               >
                 <Bell size={18} />
                 {unread > 0 && (
@@ -307,7 +309,7 @@ function MainApp() {
                 )}
               </AnimatePresence>
             </div>
-            <button onClick={() => setActiveTab('profile')} className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors">
+            <button onClick={() => setActiveTab('profile')} className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors" aria-label="View profile">
               <AvatarBubble name={user.username} color={user.avatar_color} size={30} />
             </button>
           </div>
