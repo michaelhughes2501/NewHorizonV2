@@ -4,9 +4,8 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import {
   Users, Send, ShieldCheck, Scale, LogOut, Menu, X, MessageSquare,
-  Bell, Archive, UserCircle, Briefcase, Search, ShieldAlert, HelpCircle,
-  Heart, BookOpen, Star, Trophy, Home, TrendingUp, Globe, PhoneCall,
-  ChevronDown,
+  Bell, Archive, UserCircle, Briefcase, FileText, ShieldAlert, HelpCircle,
+  Heart, BookOpen, Star, TrendingUp, Globe, PhoneCall,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './AuthContext';
 import Auth from './components/Auth';
@@ -64,7 +63,7 @@ const NAV_SECTIONS = [
     label: 'Career',
     items: [
       { id: 'opportunities', name: 'Jobs & Housing', icon: Briefcase },
-      { id: 'tools', name: 'Legal Tools', icon: Scale },
+      { id: 'tools', name: 'Career Tools', icon: FileText },
       { id: 'cases', name: 'Case Tracker', icon: Scale },
     ],
   },
