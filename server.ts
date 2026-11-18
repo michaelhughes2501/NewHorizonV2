@@ -346,14 +346,18 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
 
   // ─── Hardened security headers (CSP on) ──────────────────────────────────────
+  // In development, Vite injects an inline React Refresh preamble and opens an
+  // HMR websocket, so script-src/connect-src must be relaxed there or the app
+  // renders a blank page. Production keeps the strict policy.
+  const isDev = process.env.NODE_ENV !== "production";
   app.use(helmet.contentSecurityPolicy({
     useDefaults: true,
     directives: {
       "default-src": ["'self'"],
-      "script-src": ["'self'"],
+      "script-src": isDev ? ["'self'", "'unsafe-inline'"] : ["'self'"],
       "style-src": ["'self'", "'unsafe-inline'"],
       "img-src": ["'self'", "data:", "https:"],
-      "connect-src": ["'self'"],
+      "connect-src": isDev ? ["'self'", "ws:"] : ["'self'"],
       "object-src": ["'none'"],
       "frame-ancestors": ["'none'"],
     },
@@ -1043,6 +1047,7 @@ async function startServer() {
   });
 
   // ─── Vite Dev / Static ────────────────────────────────────────────────────────
+  if (isDev) {
   if (RUNTIME_MODE !== "production") {
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
     app.use(vite.middlewares);
