@@ -4,12 +4,13 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "tsx server.ts --dev --expose-reset-token",
     "start": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "tsx --test src/server-runtime.test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

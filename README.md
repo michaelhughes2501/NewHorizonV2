@@ -158,8 +158,10 @@ Then refresh the app — you'll see the Admin Panel in the sidebar.
 # Build for production
 npm run build
 
-# Serve production build
-NODE_ENV=production npm start
+# Serve production build (production mode is the default, no NODE_ENV needed)
+npm start
 ```
 
 The server serves the built `dist/` folder in production mode.
+
+**Runtime modes.** `npm start` always runs in production mode unless `NODE_ENV` is explicitly `development` or `test`. `npm run dev` runs `tsx server.ts --dev --expose-reset-token`, which turns on the Vite dev server and returns password-reset tokens in the forgot-password response so you can test resets without email. That token shortcut is never available in production mode, and in dev mode it needs the explicit `--expose-reset-token` flag or `EXPOSE_DEV_RESET_TOKEN=true`. Run `npm test` to check these rules.
