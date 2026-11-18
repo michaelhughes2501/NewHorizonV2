@@ -7,6 +7,7 @@ import Database from "better-sqlite3";
 import crypto from "crypto";
 import fs from "fs";
 import { sanitise, isValidEmail, checkRate, moderate, type RateAction } from "./src/server-security.ts";
+import { resolveRuntimeMode, shouldExposeResetToken, forgotPasswordResponse } from "./src/server-runtime.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -334,6 +335,12 @@ function awardAchievement(userId: string, badge: string, label: string) {
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+  // Production unless explicitly asked otherwise (see src/server-runtime.ts).
+  const RUNTIME_MODE = resolveRuntimeMode();
+  const EXPOSE_RESET_TOKEN = shouldExposeResetToken(RUNTIME_MODE);
+  if (EXPOSE_RESET_TOKEN) {
+    console.warn("⚠️  DEV ONLY: password-reset tokens are returned in API responses. Never run a real deployment like this.");
+  }
 
   app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
   app.use(express.json({ limit: "50mb" }));
@@ -467,12 +474,12 @@ async function startServer() {
       const expires = new Date(Date.now() + 3600000).toISOString();
       db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(user.id);
       db.prepare("INSERT INTO password_resets (token, user_id, expires_at) VALUES (?, ?, ?)").run(resetToken, user.id, expires);
-      // _devToken is a local-testing convenience only — there is no email provider wired up yet.
-      // Never expose the raw reset token in a real deployment (it's a full account-takeover token).
-      const devPayload = process.env.NODE_ENV !== "production" ? { _devToken: resetToken } : {};
-      res.json({ success: true, ...devPayload });
+      // There is no email provider wired up yet. The raw token is a full
+      // account-takeover credential, so it is only returned when a developer
+      // explicitly opts in outside production (npm run dev does this).
+      res.json(forgotPasswordResponse(resetToken, EXPOSE_RESET_TOKEN));
     } else {
-      res.json({ success: true });
+      res.json(forgotPasswordResponse(null, EXPOSE_RESET_TOKEN));
     }
   });
 
@@ -1041,14 +1048,18 @@ async function startServer() {
 
   // ─── Vite Dev / Static ────────────────────────────────────────────────────────
   if (isDev) {
+  if (RUNTIME_MODE !== "production") {
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
     app.use(vite.middlewares);
   } else {
+    if (!fs.existsSync(path.join(__dirname, "dist", "index.html"))) {
+      console.warn("⚠️  Production mode but dist/ is missing. Run `npm run build` first, or `npm run dev` for local development.");
+    }
     app.use(express.static(path.join(__dirname, "dist")));
     app.get(/.*/, (_req, res) => res.sendFile(path.join(__dirname, "dist", "index.html")));
   }
 
-  app.listen(PORT, "0.0.0.0", () => console.log(`✅ New Horizon running → http://localhost:${PORT}`));
+  app.listen(PORT, "0.0.0.0", () => console.log(`✅ New Horizon running (${RUNTIME_MODE}) → http://localhost:${PORT}`));
 }
 
 startServer().catch(console.error);
