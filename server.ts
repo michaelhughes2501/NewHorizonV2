@@ -349,7 +349,9 @@ async function startServer() {
   // In development, Vite injects an inline React Refresh preamble and opens an
   // HMR websocket, so script-src/connect-src must be relaxed there or the app
   // renders a blank page. Production keeps the strict policy.
-  const isDev = process.env.NODE_ENV !== "production";
+  // Uses RUNTIME_MODE (production unless `--dev` or NODE_ENV=development/test),
+  // so a host that runs `npm start` with no NODE_ENV keeps the strict policy.
+  const isDev = RUNTIME_MODE !== "production";
   app.use(helmet.contentSecurityPolicy({
     useDefaults: true,
     directives: {
@@ -1048,7 +1050,6 @@ async function startServer() {
 
   // ─── Vite Dev / Static ────────────────────────────────────────────────────────
   if (isDev) {
-  if (RUNTIME_MODE !== "production") {
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
     app.use(vite.middlewares);
   } else {
