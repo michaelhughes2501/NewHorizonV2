@@ -29,14 +29,14 @@ export default function Tools() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Career Tools</h2>
-        <p className="text-slate-500 text-sm mt-1">Resume help, interview prep, and skills inventory.</p>
+        <h2 className="text-2xl font-bold text-ink">Career Tools</h2>
+        <p className="text-ink-3 text-sm mt-1">Resume help, interview prep, and skills inventory.</p>
       </div>
 
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-surface-2 p-1 rounded-xl w-fit">
         {([['resume', 'Resume Guide'], ['interview', 'Interview Prep'], ['skills', 'Skills Inventory']] as const).map(([id, label]) => (
           <button key={id} onClick={() => setActiveTab(id)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === id ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform] ${activeTab === id ? 'bg-surface text-ink shadow' : 'text-ink-3 hover:text-ink-2'}`}>
             {label}
           </button>
         ))}
@@ -44,15 +44,15 @@ export default function Tools() {
 
       {activeTab === 'resume' && (
         <div className="space-y-4">
-          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-            <h3 className="font-semibold text-indigo-900 mb-1">Resume Writing for Second-Chance Job Seekers</h3>
-            <p className="text-sm text-indigo-700">Your resume is your first impression. Use these tips to present your best self.</p>
+          <div className="bg-accent-soft border border-accent/40 rounded-2xl p-5">
+            <h3 className="font-semibold text-accent-ink mb-1">Resume Writing for Second-Chance Job Seekers</h3>
+            <p className="text-sm text-accent-ink">Your resume is your first impression. Use these tips to present your best self.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {RESUME_TIPS.map((t, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-200 p-5">
-                <h4 className="font-semibold text-slate-900">{t.title}</h4>
-                <p className="text-sm text-slate-600 mt-2 leading-relaxed">{t.tip}</p>
+              <div key={i} className="bg-surface rounded-2xl border border-line p-5">
+                <h4 className="font-semibold text-ink">{t.title}</h4>
+                <p className="text-sm text-ink-2 mt-2 leading-relaxed">{t.tip}</p>
               </div>
             ))}
           </div>
@@ -61,14 +61,14 @@ export default function Tools() {
 
       {activeTab === 'interview' && (
         <div className="space-y-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-            <h3 className="font-semibold text-amber-900 mb-1">Interview Preparation</h3>
-            <p className="text-sm text-amber-700">Practice these common questions and know your answers before you walk in.</p>
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5">
+            <h3 className="font-semibold text-amber-300 mb-1">Interview Preparation</h3>
+            <p className="text-sm text-amber-300">Practice these common questions and know your answers before you walk in.</p>
           </div>
           {INTERVIEW_TIPS.map((t, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-200 p-5">
-              <p className="font-semibold text-slate-900">Q: {t.q}</p>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed bg-slate-50 rounded-xl p-3">💡 {t.a}</p>
+            <div key={i} className="bg-surface rounded-2xl border border-line p-5">
+              <p className="font-semibold text-ink">Q: {t.q}</p>
+              <p className="text-sm text-ink-2 mt-2 leading-relaxed bg-surface-2 rounded-xl p-3">💡 {t.a}</p>
             </div>
           ))}
         </div>
@@ -76,13 +76,13 @@ export default function Tools() {
 
       {activeTab === 'skills' && (
         <div className="space-y-6">
-          <p className="text-sm text-slate-600">Identify the skills you already have. These are valuable to employers — even if gained in unconventional ways.</p>
+          <p className="text-sm text-ink-2">Identify the skills you already have. These are valuable to employers — even if gained in unconventional ways.</p>
           {SKILLS.map(group => (
-            <div key={group.category} className="bg-white rounded-2xl border border-slate-200 p-5">
-              <h3 className="font-semibold text-slate-900 mb-3">{group.category}</h3>
+            <div key={group.category} className="bg-surface rounded-2xl border border-line p-5">
+              <h3 className="font-semibold text-ink mb-3">{group.category}</h3>
               <div className="flex flex-wrap gap-2">
                 {group.skills.map(s => (
-                  <span key={s} className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium">{s}</span>
+                  <span key={s} className="px-3 py-1.5 bg-accent-soft text-accent-ink rounded-full text-sm font-medium">{s}</span>
                 ))}
               </div>
             </div>

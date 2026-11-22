@@ -1,176 +1,159 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Phone } from 'lucide-react';
 import { useAuth } from '../AuthContext';
+import { Field, PasswordField } from './ui/Field';
+import { BrandMark } from './ui/BrandMark';
 
-type View = 'login' | 'register' | 'forgot' | 'reset';
+export type AuthView = 'login' | 'register' | 'forgot' | 'reset';
 
-const RECOVERY_STAGES = ['early', 'mid', 'late', 'sustained'];
-const INTEREST_OPTIONS = ['Employment', 'Housing', 'Mental Health', 'Sobriety', 'Education', 'Family', 'Legal', 'Community', 'Spiritual', 'Financial'];
-
-export default function Auth() {
-  const [view, setView] = useState<View>('login');
+/**
+ * Sign-in, sign-up and password reset. Sign-up asks only for what's needed to
+ * start (username, password, optional email); the rest of the profile is
+ * filled in later from the Profile page.
+ */
+export default function Auth({ initialView = 'login' }: { initialView?: AuthView }) {
+  const [view, setView] = useState<AuthView>(initialView);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [facility, setFacility] = useState('');
-  const [location, setLocation] = useState('');
-  const [bio, setBio] = useState('');
-  const [recovery_stage, setRecoveryStage] = useState('early');
-  const [interests, setInterests] = useState<string[]>([]);
   const [resetToken, setResetToken] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const toggleInterest = (i: string) =>
-    setInterests(p => p.includes(i) ? p.filter(x => x !== i) : [...p, i]);
+  const switchView = (v: AuthView) => {
+    setView(v);
+    setError('');
+    setSuccess('');
+    if (v === 'login' || v === 'register') navigate(v === 'login' ? '/login' : '/register', { replace: true });
+  };
+
+  const post = async (url: string, body: unknown) => {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Something went wrong. Please try again.');
+    return d;
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); setSuccess(''); setLoading(true);
+    setError(''); setSuccess('');
+    if ((view === 'register' || view === 'reset') && password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    setLoading(true);
     try {
       if (view === 'login') {
-        const r = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'Login failed');
+        const d = await post('/api/auth/login', { username, password });
         login(d.token, d.user);
+        navigate('/dashboard', { replace: true });
       } else if (view === 'register') {
-        const r = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, email, password, facility, location, bio, recovery_stage, interests }) });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'Registration failed');
+        const d = await post('/api/auth/register', { username, email, password });
         login(d.token, d.user);
+        navigate('/dashboard', { replace: true });
       } else if (view === 'forgot') {
-        const r = await fetch('/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error);
-        setSuccess('Check your email for a reset link.');
+        const d = await post('/api/auth/forgot-password', { email });
+        setSuccess('If that email has an account, a reset link is on its way.');
         if (d._devToken) { setResetToken(d._devToken); setView('reset'); }
-      } else if (view === 'reset') {
-        const r = await fetch('/api/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: resetToken, newPassword: password }) });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error);
-        setSuccess('Password reset! You can now log in.'); setView('login');
+      } else {
+        await post('/api/auth/reset-password', { token: resetToken, newPassword: password });
+        setPassword('');
+        setView('login');
+        setSuccess('Password reset. You can sign in now.');
       }
-    } catch (e: any) {
-      setError(e.message);
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const submitLabel = { login: 'Sign in', register: 'Create free account', forgot: 'Send reset link', reset: 'Reset password' }[view];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center font-black text-3xl text-white mx-auto mb-4 shadow-2xl shadow-indigo-500/30">N</div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">New Horizon</h1>
-          <p className="text-white/50 mt-1 text-sm">A community for second chances</p>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-canvas p-4">
+      <DawnGlow />
+      <main id="main" className="relative w-full max-w-md">
+        <div className="mb-8 text-center">
+          <Link to="/" className="inline-flex flex-col items-center gap-3 rounded-2xl">
+            <BrandMark size={56} />
+            <span className="text-3xl font-bold tracking-tight text-ink">New Horizon</span>
+          </Link>
+          <p className="mt-1 text-sm text-ink-2">A community for second chances</p>
         </div>
 
-        <div className="bg-white/8 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
-          {/* Tab switcher */}
+        <div className="glass rounded-2xl p-6 shadow-2xl sm:p-8">
           {view === 'login' || view === 'register' ? (
-            <div className="flex bg-white/5 rounded-xl p-1 mb-6">
-              {(['login', 'register'] as View[]).map(v => (
-                <button key={v} onClick={() => setView(v)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all capitalize ${view === v ? 'bg-white text-slate-900 shadow' : 'text-white/60 hover:text-white'}`}>
-                  {v}
+            <div className="mb-6 flex rounded-xl bg-white/5 p-1" role="group" aria-label="Choose sign in or create account">
+              {(['login', 'register'] as AuthView[]).map(v => (
+                <button key={v} type="button" onClick={() => switchView(v)} aria-pressed={view === v}
+                  className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${view === v ? 'bg-ink text-canvas shadow' : 'text-ink-2 hover:text-ink'}`}>
+                  {v === 'login' ? 'Sign in' : 'Join'}
                 </button>
               ))}
             </div>
           ) : (
-            <button onClick={() => setView('login')} className="flex items-center gap-2 text-white/60 hover:text-white text-sm mb-6 transition-colors">
-              ← Back to login
+            <button type="button" onClick={() => switchView('login')} className="mb-6 flex items-center gap-2 text-sm text-ink-2 transition-colors hover:text-ink">
+              ← Back to sign in
             </button>
           )}
 
-          {error && <div className="bg-red-500/15 border border-red-500/30 text-red-300 rounded-xl p-3 text-sm mb-4">{error}</div>}
-          {success && <div className="bg-green-500/15 border border-green-500/30 text-green-300 rounded-xl p-3 text-sm mb-4">{success}</div>}
+          <div aria-live="polite">
+            {error && <div role="alert" className="mb-4 rounded-xl border border-rose-500/40 bg-rose-500/15 p-3 text-sm text-rose-200">{error}</div>}
+            {success && <div role="status" className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/15 p-3 text-sm text-emerald-200">{success}</div>}
+          </div>
 
           <form onSubmit={submit} className="space-y-4">
             {view === 'login' && <>
-              <Input label="Username" value={username} onChange={setUsername} placeholder="Your username" />
-              <PasswordInput label="Password" value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw(p => !p)} />
-              <button type="button" onClick={() => setView('forgot')} className="text-xs text-indigo-300 hover:text-indigo-200 transition-colors">Forgot password?</button>
+              <Field label="Username" value={username} onChange={setUsername} autoComplete="username" autoCapitalize="none" required />
+              <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="current-password" required />
+              <button type="button" onClick={() => switchView('forgot')} className="text-xs text-accent-ink transition-colors hover:text-ink">Forgot password?</button>
             </>}
 
             {view === 'register' && <>
-              <Input label="Username *" value={username} onChange={setUsername} placeholder="Choose a username" />
-              <Input label="Email" value={email} onChange={setEmail} placeholder="your@email.com" type="email" />
-              <PasswordInput label="Password *" value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw(p => !p)} />
-              <Input label="Previous Facility" value={facility} onChange={setFacility} placeholder="e.g. Rikers, San Quentin" />
-              <Input label="Location / State" value={location} onChange={setLocation} placeholder="e.g. New York, CA" />
-              <div>
-                <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-1">Recovery Stage</label>
-                <select value={recovery_stage} onChange={e => setRecoveryStage(e.target.value)}
-                  className="w-full bg-white/8 border border-white/15 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 capitalize">
-                  {RECOVERY_STAGES.map(s => <option key={s} value={s} className="bg-slate-900">{s.charAt(0).toUpperCase() + s.slice(1)} stage</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Interests (select all that apply)</label>
-                <div className="flex flex-wrap gap-2">
-                  {INTEREST_OPTIONS.map(i => (
-                    <button key={i} type="button" onClick={() => toggleInterest(i)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${interests.includes(i) ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-white/20 text-white/60 hover:border-indigo-400 hover:text-indigo-300'}`}>
-                      {i}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-1">Bio (optional)</label>
-                <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell your story briefly…"
-                  className="w-full bg-white/8 border border-white/15 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-20 placeholder-white/30" />
-              </div>
+              <Field label="Username" value={username} onChange={setUsername} autoComplete="username" autoCapitalize="none" required
+                hint="This is how others see you. It doesn't have to be your real name." />
+              <PasswordField label="Password" value={password} onChange={setPassword} autoComplete="new-password" minLength={8} required
+                hint="At least 8 characters." />
+              <Field label="Email (optional)" type="email" value={email} onChange={setEmail} autoComplete="email" inputMode="email"
+                hint="Only used to reset your password." />
             </>}
 
-            {view === 'forgot' && <Input label="Email address" value={email} onChange={setEmail} placeholder="your@email.com" type="email" />}
+            {view === 'forgot' && (
+              <Field label="Email address" type="email" value={email} onChange={setEmail} autoComplete="email" inputMode="email" required />
+            )}
 
             {view === 'reset' && <>
-              <Input label="Reset Token" value={resetToken} onChange={setResetToken} placeholder="Paste token from email" />
-              <PasswordInput label="New Password" value={password} onChange={setPassword} show={showPw} onToggle={() => setShowPw(p => !p)} />
+              <Field label="Reset code" value={resetToken} onChange={setResetToken} autoComplete="one-time-code" required />
+              <PasswordField label="New password" value={password} onChange={setPassword} autoComplete="new-password" minLength={8} required />
             </>}
 
             <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold text-sm hover:from-indigo-400 hover:to-purple-400 transition-all disabled:opacity-60 mt-2 shadow-lg shadow-indigo-500/30">
-              {loading ? 'Please wait…' : view === 'login' ? 'Sign In' : view === 'register' ? 'Create Account' : view === 'forgot' ? 'Send Reset Link' : 'Reset Password'}
+              className="dawn-fill mt-2 w-full rounded-xl py-3 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98] disabled:opacity-60">
+              {loading ? 'Please wait…' : submitLabel}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-white/30 text-xs mt-6">
-          Your data is private and secure. You control what others see.
-        </p>
-      </div>
+        <Link to="/help" className="mt-6 flex items-center justify-center gap-2 text-sm font-medium text-rose-200 hover:text-white">
+          <Phone size={14} aria-hidden="true" /> Need help right now? Crisis lines, no account needed.
+        </Link>
+        <p className="mt-3 text-center text-xs text-ink-3">Your data is private. You control what others see.</p>
+      </main>
     </div>
   );
 }
 
-function Input({ label, value, onChange, placeholder, type = 'text' }: any) {
+/** Soft dawn light behind auth and landing screens. Purely decorative. */
+export function DawnGlow() {
   return (
-    <div>
-      <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-1">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full bg-white/8 border border-white/15 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-white/30" />
-    </div>
-  );
-}
-
-function PasswordInput({ label, value, onChange, show, onToggle }: any) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-1">{label}</label>
-      <div className="relative">
-        <input type={show ? 'text' : 'password'} value={value} onChange={e => onChange(e.target.value)} placeholder="••••••••"
-          className="w-full bg-white/8 border border-white/15 text-white rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-white/30" />
-        <button type="button" onClick={onToggle} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors">
-          {show ? <EyeOff size={16} /> : <Eye size={16} />}
-        </button>
-      </div>
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+      <div className="absolute -bottom-40 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(closest-side,rgba(245,165,36,0.28),rgba(240,81,122,0.16)_55%,transparent)] blur-2xl" />
+      <div className="absolute -top-40 right-[-10%] h-[420px] w-[520px] rounded-full bg-[radial-gradient(closest-side,rgba(139,92,246,0.22),transparent)] blur-2xl" />
     </div>
   );
 }

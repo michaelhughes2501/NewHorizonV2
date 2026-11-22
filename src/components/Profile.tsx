@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, ShieldCheck, Eye, EyeOff, Trophy } from 'lucide-react';
 import { useAuth } from '../AuthContext';
-import { AvatarBubble } from '../App';
+import { AvatarBubble } from './ui/AvatarBubble';
 
 const RECOVERY_STAGES = ['early', 'mid', 'late', 'sustained'];
 const INTEREST_OPTIONS = ['Employment', 'Housing', 'Mental Health', 'Sobriety', 'Education', 'Family', 'Legal', 'Community', 'Spiritual', 'Financial'];
@@ -40,80 +40,80 @@ export default function Profile() {
       <div className="flex items-center gap-4">
         <AvatarBubble name={user?.username || 'U'} color={form.avatar_color} size={60} />
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">{user?.username}</h2>
-          <p className="text-slate-500 text-sm flex items-center gap-1">{user?.is_verified === 1 && <><ShieldCheck size={14} className="text-indigo-500" /> Verified Member</>}</p>
+          <h2 className="text-2xl font-bold text-ink">{user?.username}</h2>
+          <p className="text-ink-3 text-sm flex items-center gap-1">{user?.is_verified === 1 && <><ShieldCheck size={14} className="text-accent-ink" /> Verified Member</>}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
-        <h3 className="font-semibold text-slate-900">Avatar Color</h3>
+      <div className="bg-surface rounded-2xl border border-line p-6 space-y-5">
+        <h3 className="font-semibold text-ink">Avatar Color</h3>
         <div className="flex gap-2 flex-wrap">
           {AVATAR_COLORS.map(c => (
             <button key={c} onClick={() => setForm(p => ({ ...p, avatar_color: c }))}
               style={{ background: c }}
-              className={`w-8 h-8 rounded-full transition-transform ${form.avatar_color === c ? 'scale-125 ring-2 ring-offset-1 ring-slate-400' : ''}`} />
+              className={`w-8 h-8 rounded-full transition-transform ${form.avatar_color === c ? 'scale-125 ring-2 ring-offset-1 ring-line-strong' : ''}`} />
           ))}
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Bio</label>
-          <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} placeholder="Tell your story…"
-            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-24" />
+          <label htmlFor="profile-bio" className="block text-sm font-semibold text-ink-2 mb-1">Bio</label>
+          <textarea id="profile-bio" value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} placeholder="Tell your story…"
+            className="w-full border border-line rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none h-24" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Previous Facility</label>
-            <input value={form.facility} onChange={e => setForm(p => ({ ...p, facility: e.target.value }))} placeholder="e.g. Rikers Island" className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label htmlFor="profile-facility" className="block text-sm font-semibold text-ink-2 mb-1">Previous Facility</label>
+            <input id="profile-facility" value={form.facility} onChange={e => setForm(p => ({ ...p, facility: e.target.value }))} placeholder="e.g. Rikers Island" className="w-full border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Location / State</label>
-            <input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. New York" className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label htmlFor="profile-location" className="block text-sm font-semibold text-ink-2 mb-1">Location / State</label>
+            <input id="profile-location" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. New York" className="w-full border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Recovery Stage</label>
-          <select value={form.recovery_stage} onChange={e => setForm(p => ({ ...p, recovery_stage: e.target.value }))} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 capitalize">
+          <label htmlFor="profile-stage" className="block text-sm font-semibold text-ink-2 mb-1">Recovery Stage</label>
+          <select id="profile-stage" value={form.recovery_stage} onChange={e => setForm(p => ({ ...p, recovery_stage: e.target.value }))} className="w-full border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent capitalize">
             {RECOVERY_STAGES.map(s => <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)} stage</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Interests</label>
+          <label className="block text-sm font-semibold text-ink-2 mb-2">Interests</label>
           <div className="flex flex-wrap gap-2">
             {INTEREST_OPTIONS.map(i => (
               <button key={i} type="button" onClick={() => toggleInterest(i)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${form.interests.includes(i) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-200 text-slate-600 hover:border-indigo-400'}`}>
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-[color,background-color,border-color,box-shadow,opacity,transform] ${form.interests.includes(i) ? 'bg-accent border-accent text-white' : 'border-line text-ink-2 hover:border-accent'}`}>
                 {i}
               </button>
             ))}
           </div>
         </div>
         <div className="space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-ink-2">
             <input type="checkbox" checked={form.hide_location} onChange={e => setForm(p => ({ ...p, hide_location: e.target.checked }))} className="rounded" />
             <EyeOff size={14} /> Hide my location from others
           </label>
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-ink-2">
             <input type="checkbox" checked={form.hide_history} onChange={e => setForm(p => ({ ...p, hide_history: e.target.checked }))} className="rounded" />
             <EyeOff size={14} /> Hide my facility history
           </label>
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-ink-2">
             <input type="checkbox" checked={form.is_mentor} onChange={e => setForm(p => ({ ...p, is_mentor: e.target.checked }))} className="rounded" />
             <ShieldCheck size={14} /> Available as a mentor
           </label>
         </div>
-        <button onClick={save} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60">
+        <button onClick={save} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-strong transition-colors disabled:opacity-60">
           <Save size={15} /> {saved ? 'Saved! ✓' : saving ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
 
       {achievements.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Trophy size={16} className="text-amber-500" /> Your Achievements</h3>
+        <div className="bg-surface rounded-2xl border border-line p-6">
+          <h3 className="font-semibold text-ink mb-4 flex items-center gap-2"><Trophy size={16} className="text-amber-400" /> Your Achievements</h3>
           <div className="flex flex-wrap gap-3">
             {achievements.map((a: any) => (
-              <div key={a.id} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-3 py-2">
+              <div key={a.id} className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-2">
                 <span>{BADGE_ICONS[a.badge] || '🥇'}</span>
-                <span className="text-xs font-semibold text-amber-800">{a.label}</span>
+                <span className="text-xs font-semibold text-amber-300">{a.label}</span>
               </div>
             ))}
           </div>

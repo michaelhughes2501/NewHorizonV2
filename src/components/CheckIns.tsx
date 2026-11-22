@@ -3,11 +3,11 @@ import { Heart, TrendingUp } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 const MOODS = [
-  { val: 1, emoji: '😢', label: 'Struggling', color: 'bg-red-100 border-red-300 text-red-700' },
-  { val: 2, emoji: '😔', label: 'Low', color: 'bg-orange-100 border-orange-300 text-orange-700' },
-  { val: 3, emoji: '😐', label: 'Okay', color: 'bg-yellow-100 border-yellow-300 text-yellow-700' },
-  { val: 4, emoji: '🙂', label: 'Good', color: 'bg-lime-100 border-lime-300 text-lime-700' },
-  { val: 5, emoji: '😄', label: 'Great', color: 'bg-green-100 border-green-300 text-green-700' },
+  { val: 1, emoji: '😢', label: 'Struggling', color: 'bg-red-500/15 border-red-500/30 text-red-300' },
+  { val: 2, emoji: '😔', label: 'Low', color: 'bg-orange-500/15 border-orange-500/30 text-orange-300' },
+  { val: 3, emoji: '😐', label: 'Okay', color: 'bg-yellow-500/15 border-yellow-500/30 text-yellow-300' },
+  { val: 4, emoji: '🙂', label: 'Good', color: 'bg-lime-500/15 border-lime-500/30 text-lime-300' },
+  { val: 5, emoji: '😄', label: 'Great', color: 'bg-green-500/15 border-green-500/30 text-green-300' },
 ];
 
 export default function CheckIns() {
@@ -52,69 +52,69 @@ export default function CheckIns() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Daily Check-In</h2>
-        <p className="text-slate-500 text-sm mt-1">Track your wellness and celebrate consistency.</p>
+        <h2 className="text-2xl font-bold text-ink">Daily Check-In</h2>
+        <p className="text-ink-3 text-sm mt-1">Track your wellness and celebrate consistency.</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center">
-          <p className="text-2xl font-bold text-indigo-600">{checkins.length}</p>
-          <p className="text-xs text-slate-500 mt-1">Total Check-ins</p>
+        <div className="bg-surface rounded-2xl border border-line p-4 text-center">
+          <p className="text-2xl font-bold text-accent-ink">{checkins.length}</p>
+          <p className="text-xs text-ink-3 mt-1">Total Check-ins</p>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center">
-          <p className="text-2xl font-bold text-amber-500">🔥 {streak}</p>
-          <p className="text-xs text-slate-500 mt-1">Day Streak</p>
+        <div className="bg-surface rounded-2xl border border-line p-4 text-center">
+          <p className="text-2xl font-bold text-amber-400">🔥 {streak}</p>
+          <p className="text-xs text-ink-3 mt-1">Day Streak</p>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-600">{avg}</p>
-          <p className="text-xs text-slate-500 mt-1">Avg Mood</p>
+        <div className="bg-surface rounded-2xl border border-line p-4 text-center">
+          <p className="text-2xl font-bold text-emerald-300">{avg}</p>
+          <p className="text-xs text-ink-3 mt-1">Avg Mood</p>
         </div>
       </div>
 
       {/* Today's check-in */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <h3 className="font-semibold text-slate-800 mb-4">How are you feeling today?</h3>
+      <div className="bg-surface rounded-2xl border border-line p-6">
+        <h3 className="font-semibold text-ink mb-4">How are you feeling today?</h3>
         <div className="flex gap-3 flex-wrap">
           {MOODS.map(m => (
             <button key={m.val} onClick={() => { setSelected(m.val); setSaved(false); }}
-              className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${selected === m.val ? m.color + ' scale-105 shadow' : 'border-slate-200 hover:border-slate-300'}`}>
+              className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-[color,background-color,border-color,box-shadow,opacity,transform] ${selected === m.val ? m.color + ' scale-105 shadow' : 'border-line hover:border-line'}`}>
               <span className="text-3xl">{m.emoji}</span>
               <span className="text-xs font-medium">{m.label}</span>
             </button>
           ))}
         </div>
-        <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Optional: add a note about your day…"
-          className="w-full mt-4 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-20" />
+        <textarea aria-label="Optional: add a note about your day" value={note} onChange={e => setNote(e.target.value)} placeholder="Optional: add a note about your day…"
+          className="w-full mt-4 border border-line rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none h-20" />
         <button onClick={submit} disabled={!selected}
-          className="mt-3 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50">
+          className="mt-3 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-strong transition-colors disabled:opacity-50">
           <Heart size={15} /> {saved ? 'Update Check-In ✓' : 'Save Check-In'}
         </button>
       </div>
 
       {/* History */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2"><TrendingUp size={16} className="text-indigo-500" /> Recent History</h3>
+      <div className="bg-surface rounded-2xl border border-line p-6">
+        <h3 className="font-semibold text-ink mb-4 flex items-center gap-2"><TrendingUp size={16} className="text-accent-ink" /> Recent History</h3>
         {checkins.length === 0
-          ? <p className="text-slate-400 text-sm">No check-ins yet. Start today!</p>
+          ? <p className="text-ink-3 text-sm">No check-ins yet. Start today!</p>
           : (
             <div className="space-y-2">
               {checkins.slice(0, 14).map(c => {
                 const mood = MOODS.find(m => m.val === c.mood);
                 return (
-                  <div key={c.id || c.date} className="flex items-center gap-4 py-2 border-b border-slate-50 last:border-0">
+                  <div key={c.id || c.date} className="flex items-center gap-4 py-2 border-b border-line last:border-0">
                     <span className="text-2xl">{mood?.emoji || '•'}</span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-700">{mood?.label}</span>
-                        <span className="text-xs text-slate-400">{c.date}</span>
+                        <span className="text-sm font-medium text-ink-2">{mood?.label}</span>
+                        <span className="text-xs text-ink-3">{c.date}</span>
                       </div>
-                      {c.note && <p className="text-xs text-slate-500 mt-0.5">{c.note}</p>}
+                      {c.note && <p className="text-xs text-ink-3 mt-0.5">{c.note}</p>}
                     </div>
                     {/* Mini bar */}
                     <div className="flex gap-0.5">
                       {[1,2,3,4,5].map(i => (
-                        <div key={i} className={`w-2 h-4 rounded-sm ${i <= c.mood ? 'bg-indigo-400' : 'bg-slate-100'}`} />
+                        <div key={i} className={`w-2 h-4 rounded-sm ${i <= c.mood ? 'bg-accent' : 'bg-surface-2'}`} />
                       ))}
                     </div>
                   </div>

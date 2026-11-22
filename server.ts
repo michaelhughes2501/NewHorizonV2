@@ -273,6 +273,7 @@ db.exec(`
 // ─── Migrations (safe ALTER TABLE) ────────────────────────────────────────────
 const migrations = [
   "ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0",
+  "ALTER TABLE sessions ADD COLUMN expires_at DATETIME",
   "ALTER TABLE users ADD COLUMN recovery_stage TEXT DEFAULT 'early'",
   "ALTER TABLE users ADD COLUMN interests TEXT DEFAULT '[]'",
   "ALTER TABLE users ADD COLUMN avatar_color TEXT DEFAULT '#4F46E5'",
@@ -287,6 +288,9 @@ const migrations = [
 for (const m of migrations) {
   try { db.exec(m); } catch (_) {}
 }
+// Sessions created before expiry existed get the same 14-day lifetime from creation.
+db.exec("UPDATE sessions SET expires_at = datetime(created_at, '+14 days') WHERE expires_at IS NULL");
+db.exec("DELETE FROM sessions WHERE expires_at <= datetime('now')");
 
 // ─── Password Hashing ─────────────────────────────────────────────────────────
 const hashPassword = (password: string): string => {
@@ -337,13 +341,21 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
   // Production unless explicitly asked otherwise (see src/server-runtime.ts).
   const RUNTIME_MODE = resolveRuntimeMode();
+  const SESSION_TTL_DAYS = Math.max(1, Number(process.env.SESSION_TTL_DAYS) || 14);
   const EXPOSE_RESET_TOKEN = shouldExposeResetToken(RUNTIME_MODE);
   if (EXPOSE_RESET_TOKEN) {
     console.warn("⚠️  DEV ONLY: password-reset tokens are returned in API responses. Never run a real deployment like this.");
   }
 
+  // Behind a host's load balancer (Render, Railway, Fly, Vercel) every request
+  // arrives from the proxy's IP. Trust one hop so req.ip is the real visitor
+  // and the rate limiter doesn't lock every user out together.
+  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
+
   app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-  app.use(express.json({ limit: "50mb" }));
+  // Vault uploads carry base64 files, so only that route gets a large body.
+  app.use("/api/documents", express.json({ limit: "15mb" }));
+  app.use(express.json({ limit: "1mb" }));
 
   // ─── Hardened security headers (CSP on) ──────────────────────────────────────
   // In development, Vite injects an inline React Refresh preamble and opens an
@@ -383,7 +395,12 @@ async function startServer() {
 
   // ─── Server-side rate limiter (real, non-bypassable) ─────────────────────────
   const rateLimit = (action: RateAction) => (req: any, res: any, next: any) => {
-    const id = req.userId || req.ip || "anon";
+    // Login is keyed by IP + username so one attacker can't lock a user out
+    // from every device, and one shared IP can't lock out everyone.
+    const who = action === "login"
+      ? `${req.ip}:${String(req.body?.username ?? "").trim().toLowerCase()}`
+      : (req.userId || req.ip || "anon");
+    const id = who;
     const r = checkRate(action, String(id));
     if (!r.ok) return res.status(429).json({ error: `Too many requests. Try again in ${r.resetIn}s.` });
     next();
@@ -403,8 +420,8 @@ async function startServer() {
   const requireAuth = (req: any, res: any, next: any) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).json({ error: "No token" });
-    const session = db.prepare("SELECT user_id FROM sessions WHERE token = ?").get(token) as any;
-    if (!session) return res.status(401).json({ error: "Invalid token" });
+    const session = db.prepare("SELECT user_id FROM sessions WHERE token = ? AND (expires_at IS NULL OR expires_at > datetime('now'))").get(token) as any;
+    if (!session) return res.status(401).json({ error: "Session expired. Please sign in again." });
     const user = db.prepare("SELECT is_suspended FROM users WHERE id = ?").get(session.user_id) as any;
     if (user?.is_suspended === 1) return res.status(403).json({ error: "Account suspended" });
     req.userId = session.user_id;
@@ -435,7 +452,7 @@ async function startServer() {
         "INSERT INTO users (id, username, email, password, facility, location, bio, recovery_stage, interests, avatar_color) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       ).run(id, username, email || null, hashPassword(password), facility || null, location || null, bio || null, recovery_stage || 'early', JSON.stringify(interests || []), color);
       const token = crypto.randomUUID();
-      db.prepare("INSERT INTO sessions (token, user_id) VALUES (?, ?)").run(token, id);
+      db.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', '+${SESSION_TTL_DAYS} days'))`).run(token, id);
       awardAchievement(id, "welcome", "Welcome to New Horizon");
       const user = db.prepare("SELECT id, username, email, facility, location, bio, role, is_admin, is_mentor, is_verified, recovery_stage, interests, avatar_color FROM users WHERE id = ?").get(id);
       res.json({ token, user });
@@ -450,7 +467,7 @@ async function startServer() {
     if (!user || !verifyPassword(password, user.password)) return res.status(401).json({ error: "Invalid credentials" });
     if (user.is_suspended === 1) return res.status(403).json({ error: "Account suspended" });
     const token = crypto.randomUUID();
-    db.prepare("INSERT INTO sessions (token, user_id) VALUES (?, ?)").run(token, user.id);
+    db.prepare(`INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, datetime('now', '+${SESSION_TTL_DAYS} days'))`).run(token, user.id);
     const safeUser = { id: user.id, username: user.username, email: user.email, facility: user.facility, location: user.location, bio: user.bio, role: user.is_admin === 1 ? "super_admin" : user.role, is_admin: user.is_admin, is_mentor: user.is_mentor, is_verified: user.is_verified, recovery_stage: user.recovery_stage, interests: user.interests, avatar_color: user.avatar_color };
     res.json({ token, user: safeUser });
   });
@@ -485,8 +502,9 @@ async function startServer() {
     }
   });
 
-  app.post("/api/auth/reset-password", (req, res) => {
+  app.post("/api/auth/reset-password", rateLimit("passwordReset"), (req, res) => {
     const { token, newPassword } = req.body;
+    if (typeof newPassword !== "string" || newPassword.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
     const reset = db.prepare("SELECT user_id, expires_at FROM password_resets WHERE token = ?").get(token) as any;
     if (!reset) return res.status(400).json({ error: "Invalid token" });
     if (new Date(reset.expires_at) < new Date()) {
@@ -1019,6 +1037,7 @@ async function startServer() {
 
   app.put("/api/admin/users/:id/role", requireAuth, requireRole(["super_admin"]), (req: any, res) => {
     const { role } = req.body;
+    if (!["user", "moderator", "admin", "super_admin"].includes(role)) return res.status(400).json({ error: "Unknown role" });
     db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, req.params.id);
     res.json({ success: true });
   });
@@ -1048,6 +1067,13 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // Oversized or malformed JSON bodies get a clear JSON error, not a stack trace.
+  app.use((err: any, _req: any, res: any, next: any) => {
+    if (err?.type === "entity.too.large") return res.status(413).json({ error: "That upload is too large." });
+    if (err?.type === "entity.parse.failed") return res.status(400).json({ error: "Invalid request body." });
+    next(err);
+  });
+
   // ─── Vite Dev / Static ────────────────────────────────────────────────────────
   if (isDev) {
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
@@ -1056,8 +1082,12 @@ async function startServer() {
     if (!fs.existsSync(path.join(__dirname, "dist", "index.html"))) {
       console.warn("⚠️  Production mode but dist/ is missing. Run `npm run build` first, or `npm run dev` for local development.");
     }
-    app.use(express.static(path.join(__dirname, "dist")));
-    app.get(/.*/, (_req, res) => res.sendFile(path.join(__dirname, "dist", "index.html")));
+    app.use("/assets", express.static(path.join(__dirname, "dist", "assets"), { immutable: true, maxAge: "1y" }));
+    app.use(express.static(path.join(__dirname, "dist"), { index: false }));
+    app.get(/.*/, (_req, res) => {
+      res.setHeader("Cache-Control", "no-cache");
+      res.sendFile(path.join(__dirname, "dist", "index.html"));
+    });
   }
 
   app.listen(PORT, "0.0.0.0", () => console.log(`✅ New Horizon running (${RUNTIME_MODE}) → http://localhost:${PORT}`));

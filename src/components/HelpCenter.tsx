@@ -27,28 +27,28 @@ export default function HelpCenter() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Help Center</h2>
-        <p className="text-slate-500 text-sm mt-1">Find answers to common questions about New Horizon.</p>
+        <h2 className="text-2xl font-bold text-ink">Help Center</h2>
+        <p className="text-ink-3 text-sm mt-1">Find answers to common questions about New Horizon.</p>
       </div>
 
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search for help…"
-        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" />
+      <input aria-label="Search for help" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search for help…"
+        className="w-full border border-line rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent shadow-sm" />
 
       {categories.filter(c => filtered.some(f => f.cat === c)).map(cat => (
         <div key={cat}>
-          <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wider">{cat}</h3>
+          <h3 className="font-semibold text-ink-2 mb-3 text-sm uppercase tracking-wider">{cat}</h3>
           <div className="space-y-2">
             {filtered.filter(f => f.cat === cat).map((f, i) => {
               const idx = FAQS.indexOf(f);
               return (
-                <div key={i} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div key={i} className="bg-surface rounded-2xl border border-line overflow-hidden">
                   <button onClick={() => setOpen(open === idx ? null : idx)}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors">
-                    <span className="font-medium text-slate-900 text-sm">{f.q}</span>
-                    {open === idx ? <ChevronUp size={16} className="text-slate-400 shrink-0" /> : <ChevronDown size={16} className="text-slate-400 shrink-0" />}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-surface-3 transition-colors">
+                    <span className="font-medium text-ink text-sm">{f.q}</span>
+                    {open === idx ? <ChevronUp size={16} className="text-ink-3 shrink-0" /> : <ChevronDown size={16} className="text-ink-3 shrink-0" />}
                   </button>
                   {open === idx && (
-                    <div className="px-5 pb-4 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">{f.a}</div>
+                    <div className="px-5 pb-4 text-sm text-ink-2 leading-relaxed border-t border-line pt-3">{f.a}</div>
                   )}
                 </div>
               );
@@ -57,9 +57,9 @@ export default function HelpCenter() {
         </div>
       ))}
 
-      <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 text-center">
-        <p className="font-semibold text-indigo-900 mb-1">Still need help?</p>
-        <p className="text-sm text-indigo-700">Post in the Community Forum and our team or fellow members will assist you.</p>
+      <div className="bg-accent-soft border border-accent/40 rounded-2xl p-5 text-center">
+        <p className="font-semibold text-accent-ink mb-1">Still need help?</p>
+        <p className="text-sm text-accent-ink">Post in the Community Forum and our team or fellow members will assist you.</p>
       </div>
     </div>
   );

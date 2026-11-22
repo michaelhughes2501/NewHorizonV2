@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Send, UserPlus, ShieldCheck, Flag, Ban } from 'lucide-react';
-import { motion } from 'motion/react';
+import * as m from 'motion/react-m';
 import { useAuth } from '../AuthContext';
-import { AvatarBubble } from '../App';
+import { AvatarBubble } from './ui/AvatarBubble';
 
 export default function TheYard() {
   const { token, user } = useAuth();
@@ -41,58 +41,58 @@ export default function TheYard() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">The Yard</h2>
-        <p className="text-slate-500 text-sm mt-1">Connect with people on the same journey.</p>
+        <h2 className="text-2xl font-bold text-ink">The Yard</h2>
+        <p className="text-ink-3 text-sm mt-1">Connect with people on the same journey.</p>
       </div>
 
       <div className="relative">
-        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, facility, location…"
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" />
+        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3" />
+        <input aria-label="Search by name, facility, location" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, facility, location…"
+          className="w-full pl-10 pr-4 py-3 rounded-xl border border-line bg-surface text-sm focus:outline-none focus:ring-2 focus:ring-accent shadow-sm" />
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-slate-100 rounded-2xl animate-pulse" />)}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-surface-2 rounded-2xl animate-pulse" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 text-ink-3">
           <UserPlus size={40} className="mx-auto mb-3 opacity-30" />
           <p>No members found. {search ? 'Try a different search.' : 'Be the first!'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((u, i) => (
-            <motion.div key={u.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md transition-all">
+            <m.div key={u.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+              className="bg-surface rounded-2xl border border-line p-5 hover:shadow-md transition-[color,background-color,border-color,box-shadow,opacity,transform]">
               <div className="flex items-start gap-4">
                 <AvatarBubble name={u.name} color={u.avatar_color} size={44} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-slate-900">{u.name}</span>
-                    {u.is_verified === 1 && <span title="Verified Member"><ShieldCheck size={14} className="text-indigo-500" /></span>}
-                    {u.is_mentor === 1 && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Mentor</span>}
-                    {u.role === 'super_admin' || u.is_admin === 1 ? <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">Admin</span> : null}
+                    <span className="font-semibold text-ink">{u.name}</span>
+                    {u.is_verified === 1 && <span title="Verified Member"><ShieldCheck size={14} className="text-accent-ink" /></span>}
+                    {u.is_mentor === 1 && <span className="text-[10px] bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full font-semibold">Mentor</span>}
+                    {u.role === 'super_admin' || u.is_admin === 1 ? <span className="text-[10px] bg-red-500/15 text-red-300 px-2 py-0.5 rounded-full font-semibold">Admin</span> : null}
                   </div>
-                  {u.history && u.history !== 'Hidden' && <p className="text-xs text-slate-400 mt-0.5">Previously at: {u.history}</p>}
-                  {u.location && u.location !== 'Hidden' && <p className="text-xs text-slate-400">{u.location}</p>}
-                  {u.bio && <p className="text-sm text-slate-600 mt-2 line-clamp-2">{u.bio}</p>}
+                  {u.history && u.history !== 'Hidden' && <p className="text-xs text-ink-3 mt-0.5">Previously at: {u.history}</p>}
+                  {u.location && u.location !== 'Hidden' && <p className="text-xs text-ink-3">{u.location}</p>}
+                  {u.bio && <p className="text-sm text-ink-2 mt-2 line-clamp-2">{u.bio}</p>}
                   {u.recovery_stage && (
-                    <span className="inline-block mt-2 text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium capitalize">{u.recovery_stage} stage</span>
+                    <span className="inline-block mt-2 text-[10px] bg-accent-soft text-accent-ink px-2 py-0.5 rounded-full font-medium capitalize">{u.recovery_stage} stage</span>
                   )}
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={() => sendKite(u.id, u.name)}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors">
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl bg-accent text-white text-xs font-semibold hover:bg-accent-strong transition-colors">
                   <Send size={13} /> Send Kite
                 </button>
                 <button onClick={() => blockUser(u.id)}
                   title="Block user"
                   aria-label={`Block ${u.name}`}
-                  className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-300 transition-colors">
+                  className="p-2 rounded-xl border border-line text-ink-3 hover:text-red-400 hover:border-red-500/30 transition-colors">
                   <Ban size={14} />
                 </button>
               </div>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       )}

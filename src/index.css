@@ -1,17 +1,65 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
 
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 html {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+  background-color: var(--color-canvas);
 }
 
 body {
   margin: 0;
   padding: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+/* Native form controls follow the dark theme */
+select option {
+  background-color: var(--color-surface-2);
+  color: var(--color-ink);
+}
+
+/* Visible keyboard focus on everything interactive (mouse clicks don't show it) */
+:where(a, button, [role="button"], [tabindex], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The dawn gradient, used for the hero, key CTAs and the brand mark */
+.dawn-text {
+  background-image: linear-gradient(100deg, var(--color-dawn-1), var(--color-dawn-2) 45%, var(--color-dawn-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Darker dawn stops so white button text keeps 5.6:1 contrast or better */
+.dawn-fill {
+  background-image: linear-gradient(120deg, #c2255c, #7c3aed);
+}
+
+.glass {
+  background-color: rgb(255 255 255 / 0.04);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Staggered reveal for lists of cards: set --i on each child */
+.stagger > * {
+  animation: rise var(--duration-slow) var(--ease-out-soft) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
 }
 
 .scrollbar-none {
@@ -21,4 +69,14 @@ body {
 
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* Respect the OS "reduce motion" setting everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
