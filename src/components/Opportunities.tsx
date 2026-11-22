@@ -56,20 +56,20 @@ export default function Opportunities() {
     fetch('/api/housing', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(d => Array.isArray(d) && setHousing(d));
   };
 
-  const STATUS_COLORS: Record<string, string> = { applied: 'bg-blue-100 text-blue-700', 'phone screen': 'bg-purple-100 text-purple-700', interview: 'bg-amber-100 text-amber-700', offer: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700', accepted: 'bg-emerald-100 text-emerald-700' };
+  const STATUS_COLORS: Record<string, string> = { applied: 'bg-blue-500/15 text-blue-300', 'phone screen': 'bg-purple-500/15 text-purple-300', interview: 'bg-amber-500/15 text-amber-300', offer: 'bg-green-500/15 text-green-300', rejected: 'bg-red-500/15 text-red-300', accepted: 'bg-emerald-500/15 text-emerald-300' };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Opportunities</h2>
-        <p className="text-slate-500 text-sm mt-1">Jobs, housing, and application tracking — all in one place.</p>
+        <h2 className="text-2xl font-bold text-ink">Opportunities</h2>
+        <p className="text-ink-3 text-sm mt-1">Jobs, housing, and application tracking — all in one place.</p>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-surface-2 p-1 rounded-xl w-fit">
         {(['jobs', 'tracker', 'housing'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all capitalize ${tab === t ? 'bg-white text-slate-900 shadow' : 'text-slate-500 hover:text-slate-700'}`}>
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-[color,background-color,border-color,box-shadow,opacity,transform] capitalize ${tab === t ? 'bg-surface text-ink shadow' : 'text-ink-3 hover:text-ink-2'}`}>
             {t === 'tracker' ? 'Application Tracker' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
@@ -79,55 +79,55 @@ export default function Opportunities() {
       {tab === 'jobs' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
               <input type="checkbox" checked={felonyFilter} onChange={e => setFelonyFilter(e.target.checked)} className="rounded" />
               <Filter size={14} /> Felony-friendly only
             </label>
-            <button onClick={() => setShowJobForm(p => !p)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">
+            <button onClick={() => setShowJobForm(p => !p)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-strong transition-colors">
               <Plus size={15} /> Post a Job
             </button>
           </div>
 
           {showJobForm && (
-            <form onSubmit={addJob} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
-              <h3 className="font-semibold text-slate-900">Post a Job Listing</h3>
+            <form onSubmit={addJob} className="bg-surface rounded-2xl border border-line p-6 space-y-3">
+              <h3 className="font-semibold text-ink">Post a Job Listing</h3>
               {[['title', 'Job Title *'], ['company', 'Company *'], ['location', 'Location'], ['salary_range', 'Salary Range']].map(([k, p]) => (
-                <input key={k} required={p.includes('*')} placeholder={p} value={(jobForm as any)[k]} onChange={e => setJobForm(prev => ({ ...prev, [k]: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input aria-label={p} key={k} required={p.includes('*')} placeholder={p} value={(jobForm as any)[k]} onChange={e => setJobForm(prev => ({ ...prev, [k]: e.target.value }))}
+                  className="w-full border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
               ))}
-              <textarea value={jobForm.description} onChange={e => setJobForm(p => ({ ...p, description: e.target.value }))} placeholder="Job description"
-                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-20" />
+              <textarea aria-label="Job description" value={jobForm.description} onChange={e => setJobForm(p => ({ ...p, description: e.target.value }))} placeholder="Job description"
+                className="w-full border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none h-20" />
               <div className="flex gap-3 flex-wrap">
-                <select value={jobForm.category} onChange={e => setJobForm(p => ({ ...p, category: e.target.value }))} className="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none capitalize">
+                <select aria-label="Job category" value={jobForm.category} onChange={e => setJobForm(p => ({ ...p, category: e.target.value }))} className="border border-line rounded-xl px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus capitalize">
                   {JOB_CATEGORIES.map(c => <option key={c} value={c} className="capitalize">{c}</option>)}
                 </select>
-                <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
                   <input type="checkbox" checked={jobForm.is_felony_friendly} onChange={e => setJobForm(p => ({ ...p, is_felony_friendly: e.target.checked }))} className="rounded" />
                   Felony-friendly
                 </label>
               </div>
               <div className="flex gap-2">
-                <button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">Post</button>
-                <button type="button" onClick={() => setShowJobForm(false)} className="px-5 py-2 rounded-xl border border-slate-200 text-sm hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-strong transition-colors">Post</button>
+                <button type="button" onClick={() => setShowJobForm(false)} className="px-5 py-2 rounded-xl border border-line text-sm hover:bg-surface-3 transition-colors">Cancel</button>
               </div>
             </form>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {jobs.length === 0 ? <div className="col-span-2 text-center py-12 text-slate-400"><Briefcase size={32} className="mx-auto mb-2 opacity-30" /><p>No jobs posted yet.</p></div>
+            {jobs.length === 0 ? <div className="col-span-2 text-center py-12 text-ink-3"><Briefcase size={32} className="mx-auto mb-2 opacity-30" /><p>No jobs posted yet.</p></div>
               : jobs.map(j => (
-                <div key={j.id} className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md transition-all">
+                <div key={j.id} className="bg-surface rounded-2xl border border-line p-5 hover:shadow-md transition-[color,background-color,border-color,box-shadow,opacity,transform]">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-semibold text-slate-900">{j.title}</h3>
-                      <p className="text-sm text-slate-500">{j.company}</p>
-                      {j.location && <p className="text-xs text-slate-400 mt-1">📍 {j.location}</p>}
-                      {j.salary_range && <p className="text-xs text-slate-400">💰 {j.salary_range}</p>}
+                      <h3 className="font-semibold text-ink">{j.title}</h3>
+                      <p className="text-sm text-ink-3">{j.company}</p>
+                      {j.location && <p className="text-xs text-ink-3 mt-1">📍 {j.location}</p>}
+                      {j.salary_range && <p className="text-xs text-ink-3">💰 {j.salary_range}</p>}
                     </div>
-                    {j.is_felony_friendly === 1 && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold shrink-0">2nd Chance</span>}
+                    {j.is_felony_friendly === 1 && <span className="text-[10px] bg-green-500/15 text-green-300 px-2 py-1 rounded-full font-bold shrink-0">2nd Chance</span>}
                   </div>
-                  {j.description && <p className="text-sm text-slate-600 mt-3 line-clamp-2">{j.description}</p>}
-                  <span className="inline-block mt-2 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full capitalize">{j.category}</span>
+                  {j.description && <p className="text-sm text-ink-2 mt-3 line-clamp-2">{j.description}</p>}
+                  <span className="inline-block mt-2 text-[10px] bg-surface-2 text-ink-3 px-2 py-0.5 rounded-full capitalize">{j.category}</span>
                 </div>
               ))}
           </div>
@@ -137,43 +137,43 @@ export default function Opportunities() {
       {/* APPLICATION TRACKER */}
       {tab === 'tracker' && (
         <div className="space-y-4">
-          <button onClick={() => setShowAppForm(p => !p)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">
+          <button onClick={() => setShowAppForm(p => !p)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-strong transition-colors">
             <Plus size={15} /> Log Application
           </button>
 
           {showAppForm && (
-            <form onSubmit={addApp} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
-              <h3 className="font-semibold text-slate-900">Log a Job Application</h3>
+            <form onSubmit={addApp} className="bg-surface rounded-2xl border border-line p-6 space-y-3">
+              <h3 className="font-semibold text-ink">Log a Job Application</h3>
               <div className="grid grid-cols-2 gap-3">
-                <input required placeholder="Company *" value={appForm.company} onChange={e => setAppForm(p => ({ ...p, company: e.target.value }))} className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                <input required placeholder="Position *" value={appForm.position} onChange={e => setAppForm(p => ({ ...p, position: e.target.value }))} className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                <input type="date" value={appForm.date_applied} onChange={e => setAppForm(p => ({ ...p, date_applied: e.target.value }))} className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                <select value={appForm.status} onChange={e => setAppForm(p => ({ ...p, status: e.target.value }))} className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none capitalize">
+                <input aria-label="Company" required placeholder="Company *" value={appForm.company} onChange={e => setAppForm(p => ({ ...p, company: e.target.value }))} className="border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                <input aria-label="Position" required placeholder="Position *" value={appForm.position} onChange={e => setAppForm(p => ({ ...p, position: e.target.value }))} className="border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                <input aria-label="Date applied" type="date" value={appForm.date_applied} onChange={e => setAppForm(p => ({ ...p, date_applied: e.target.value }))} className="border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
+                <select aria-label="Application status" value={appForm.status} onChange={e => setAppForm(p => ({ ...p, status: e.target.value }))} className="border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus capitalize">
                   {APP_STATUSES.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
                 </select>
               </div>
-              <textarea value={appForm.notes} onChange={e => setAppForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes" className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none resize-none h-16" />
+              <textarea aria-label="Notes" value={appForm.notes} onChange={e => setAppForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes" className="w-full border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus resize-none h-16" />
               <div className="flex gap-2">
-                <button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">Add</button>
-                <button type="button" onClick={() => setShowAppForm(false)} className="px-5 py-2 rounded-xl border border-slate-200 text-sm hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-strong transition-colors">Add</button>
+                <button type="button" onClick={() => setShowAppForm(false)} className="px-5 py-2 rounded-xl border border-line text-sm hover:bg-surface-3 transition-colors">Cancel</button>
               </div>
             </form>
           )}
 
-          {applications.length === 0 ? <div className="text-center py-12 text-slate-400"><p>No applications tracked yet. Log your first one!</p></div>
+          {applications.length === 0 ? <div className="text-center py-12 text-ink-3"><p>No applications tracked yet. Log your first one!</p></div>
             : <div className="space-y-3">
               {applications.map(a => (
-                <div key={a.id} className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4">
+                <div key={a.id} className="bg-surface rounded-2xl border border-line p-5 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-slate-900">{a.position}</h3>
-                    <p className="text-sm text-slate-500">{a.company} {a.date_applied && `· Applied ${a.date_applied}`}</p>
-                    {a.notes && <p className="text-xs text-slate-400 mt-1 truncate">{a.notes}</p>}
+                    <h3 className="font-semibold text-ink">{a.position}</h3>
+                    <p className="text-sm text-ink-3">{a.company} {a.date_applied && `· Applied ${a.date_applied}`}</p>
+                    {a.notes && <p className="text-xs text-ink-3 mt-1 truncate">{a.notes}</p>}
                   </div>
-                  <select value={a.status} onChange={e => updateAppStatus(a.id, e.target.value)}
-                    className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${STATUS_COLORS[a.status] || 'bg-slate-100 text-slate-600'}`}>
-                    {APP_STATUSES.map(s => <option key={s} value={s} className="bg-white text-slate-900 capitalize">{s}</option>)}
+                  <select aria-label={`Status for ${a.position || 'application'}`} value={a.status} onChange={e => updateAppStatus(a.id, e.target.value)}
+                    className={`text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${STATUS_COLORS[a.status] || 'bg-surface-2 text-ink-2'}`}>
+                    {APP_STATUSES.map(s => <option key={s} value={s} className="bg-surface text-ink capitalize">{s}</option>)}
                   </select>
-                  <button onClick={() => delApp(a.id)} className="p-2 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={15} /></button>
+                  <button onClick={() => delApp(a.id)} className="p-2 rounded-xl text-ink-3 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 size={15} /></button>
                 </div>
               ))}
             </div>}
@@ -183,32 +183,32 @@ export default function Opportunities() {
       {/* HOUSING */}
       {tab === 'housing' && (
         <div className="space-y-4">
-          <button onClick={() => setShowHousingForm(p => !p)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">
+          <button onClick={() => setShowHousingForm(p => !p)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-strong transition-colors">
             <Plus size={15} /> Add Housing Resource
           </button>
 
           {showHousingForm && (
-            <form onSubmit={addHousing} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
+            <form onSubmit={addHousing} className="bg-surface rounded-2xl border border-line p-6 space-y-3">
               {[['name', 'Name *'], ['type', 'Type (transitional, shelter, sober living...)'], ['location', 'Location'], ['contact_info', 'Contact info'], ['description', 'Description']].map(([k, p]) => (
-                <input key={k} required={p.includes('*')} placeholder={p} value={(housingForm as any)[k]} onChange={e => setHousingForm(prev => ({ ...prev, [k]: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input aria-label={p} key={k} required={p.includes('*')} placeholder={p} value={(housingForm as any)[k]} onChange={e => setHousingForm(prev => ({ ...prev, [k]: e.target.value }))}
+                  className="w-full border border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
               ))}
               <div className="flex gap-2">
-                <button type="submit" className="px-5 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">Add</button>
-                <button type="button" onClick={() => setShowHousingForm(false)} className="px-5 py-2 rounded-xl border border-slate-200 text-sm hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="submit" className="px-5 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-strong transition-colors">Add</button>
+                <button type="button" onClick={() => setShowHousingForm(false)} className="px-5 py-2 rounded-xl border border-line text-sm hover:bg-surface-3 transition-colors">Cancel</button>
               </div>
             </form>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {housing.length === 0 ? <div className="col-span-2 text-center py-12 text-slate-400"><Home size={32} className="mx-auto mb-2 opacity-30" /><p>No housing resources yet.</p></div>
+            {housing.length === 0 ? <div className="col-span-2 text-center py-12 text-ink-3"><Home size={32} className="mx-auto mb-2 opacity-30" /><p>No housing resources yet.</p></div>
               : housing.map(h => (
-                <div key={h.id} className="bg-white rounded-2xl border border-slate-200 p-5">
-                  <h3 className="font-semibold text-slate-900">{h.name}</h3>
-                  {h.type && <span className="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{h.type}</span>}
-                  {h.location && <p className="text-sm text-slate-500 mt-2">📍 {h.location}</p>}
-                  {h.contact_info && <p className="text-sm text-slate-500">📞 {h.contact_info}</p>}
-                  {h.description && <p className="text-sm text-slate-600 mt-2 line-clamp-2">{h.description}</p>}
+                <div key={h.id} className="bg-surface rounded-2xl border border-line p-5">
+                  <h3 className="font-semibold text-ink">{h.name}</h3>
+                  {h.type && <span className="text-[11px] bg-surface-2 text-ink-3 px-2 py-0.5 rounded-full">{h.type}</span>}
+                  {h.location && <p className="text-sm text-ink-3 mt-2">📍 {h.location}</p>}
+                  {h.contact_info && <p className="text-sm text-ink-3">📞 {h.contact_info}</p>}
+                  {h.description && <p className="text-sm text-ink-2 mt-2 line-clamp-2">{h.description}</p>}
                 </div>
               ))}
           </div>

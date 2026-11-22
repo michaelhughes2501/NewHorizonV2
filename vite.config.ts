@@ -16,5 +16,17 @@ export default defineConfig(({ mode }) => {
       hmr: process.env.DISABLE_HMR !== 'true',
       port: 5173,
     },
+    build: {
+      rollupOptions: {
+        output: {
+          // Long-lived vendor chunks: they change far less often than app code,
+          // so returning visitors keep them cached.
+          manualChunks: {
+            react: ['react', 'react-dom', 'react-dom/client', 'react-router-dom'],
+            motion: ['motion'],
+          },
+        },
+      },
+    },
   };
 });

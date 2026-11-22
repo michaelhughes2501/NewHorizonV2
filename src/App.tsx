@@ -1,44 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
+import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate, Link } from 'react-router-dom';
+import { AnimatePresence, MotionConfig, LazyMotion, domAnimation } from 'motion/react';
+import * as m from 'motion/react-m';
 import {
   Users, Send, ShieldCheck, Scale, LogOut, Menu, X, MessageSquare,
   Bell, Archive, UserCircle, Briefcase, FileText, ShieldAlert, HelpCircle,
   Heart, BookOpen, Star, TrendingUp, Globe, PhoneCall,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './AuthContext';
-import Auth from './components/Auth';
 import { AppNotification } from './types';
-
-// Components
-import TheYard from './components/TheYard';
-import Kites from './components/Kites';
+import { cn } from './lib/cn';
+import { usePoll } from './hooks/usePoll';
+import { useMediaQuery } from './hooks/useMediaQuery';
+import { ROUTES, pathFor, type Tab } from './routes';
+import { AvatarBubble } from './components/ui/AvatarBubble';
+import { BrandMark } from './components/ui/BrandMark';
+import Auth from './components/Auth';
+import Landing from './components/Landing';
 import Resources from './components/Resources';
-import Tools from './components/Tools';
-import Forum from './components/Forum';
-import MentorshipTab from './components/Mentorship';
-import Vault from './components/Vault';
-import Profile from './components/Profile';
-import Opportunities from './components/Opportunities';
-import AdminDashboard from './components/AdminDashboard';
-import HelpCenter from './components/HelpCenter';
-import CaseTracker from './components/CaseTracker';
-import Groups from './components/Groups';
-import CheckIns from './components/CheckIns';
-import Journal from './components/Journal';
-import SuccessStories from './components/SuccessStories';
-import Dashboard from './components/Dashboard';
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+// Kept for any older import of these helpers from App.
+export { cn } from './lib/cn';
+export { AvatarBubble } from './components/ui/AvatarBubble';
 
-type Tab = 'dashboard' | 'yard' | 'kites' | 'groups' | 'forum' | 'mentorship' | 'opportunities' |
-  'resources' | 'tools' | 'cases' | 'vault' | 'checkins' | 'journal' | 'stories' |
-  'profile' | 'admin' | 'help';
+// Each screen loads on demand, so the first visit downloads only what it shows.
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const TheYard = lazy(() => import('./components/TheYard'));
+const Kites = lazy(() => import('./components/Kites'));
+const Groups = lazy(() => import('./components/Groups'));
+const Forum = lazy(() => import('./components/Forum'));
+const SuccessStories = lazy(() => import('./components/SuccessStories'));
+const MentorshipTab = lazy(() => import('./components/Mentorship'));
+const CheckIns = lazy(() => import('./components/CheckIns'));
+const Journal = lazy(() => import('./components/Journal'));
+const Opportunities = lazy(() => import('./components/Opportunities'));
+const Tools = lazy(() => import('./components/Tools'));
+const CaseTracker = lazy(() => import('./components/CaseTracker'));
+const Vault = lazy(() => import('./components/Vault'));
+const Profile = lazy(() => import('./components/Profile'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const HelpCenter = lazy(() => import('./components/HelpCenter'));
 
-const NAV_SECTIONS = [
+const NAV_SECTIONS: { label: string; items: { id: Tab; name: string; icon: React.ComponentType<any> }[] }[] = [
   {
     label: 'Community',
     items: [
@@ -77,255 +80,321 @@ const NAV_SECTIONS = [
   },
 ];
 
-function AvatarBubble({ name, color, size = 32 }: { name: string; color?: string; size?: number }) {
-  const bg = color || '#4F46E5';
+const ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
+
+const navItemClass = ({ isActive }: { isActive: boolean }) => cn(
+  'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+  isActive ? 'bg-white/10 text-ink shadow-inner' : 'text-ink-2 hover:bg-white/5 hover:text-ink',
+);
+
+function PageSkeleton() {
   return (
-    <div
-      style={{ width: size, height: size, background: bg, flexShrink: 0 }}
-      className="rounded-full flex items-center justify-center text-white font-bold text-xs select-none"
-    >
-      {name?.charAt(0).toUpperCase() || '?'}
+    <div role="status" aria-label="Loading" className="space-y-4">
+      <div className="h-8 w-1/3 animate-pulse rounded-lg bg-surface-2" />
+      <div className="grid gap-4 md:grid-cols-2">
+        {[0, 1, 2, 3].map(i => <div key={i} className="h-28 animate-pulse rounded-2xl bg-surface-2" />)}
+      </div>
     </div>
   );
 }
 
-export { AvatarBubble };
+function FullScreenLoader() {
+  return (
+    <div role="status" aria-label="Loading New Horizon" className="flex min-h-screen items-center justify-center bg-canvas">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-pulse"><BrandMark size={56} /></div>
+        <p className="text-sm font-medium uppercase tracking-widest text-ink-3">Loading New Horizon…</p>
+      </div>
+    </div>
+  );
+}
 
-function MainApp() {
-  const { user, token, logout, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+function NotFound() {
+  return (
+    <div className="py-24 text-center">
+      <p className="text-5xl font-bold dawn-text">404</p>
+      <h1 className="mt-4 text-xl font-semibold text-ink">This page doesn't exist</h1>
+      <p className="mt-2 text-sm text-ink-2">The link may be old, or the page has moved.</p>
+      <Link to="/" className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-accent px-5 text-sm font-semibold text-white hover:bg-accent-strong">
+        Go home
+      </Link>
+    </div>
+  );
+}
+
+/** Public crisis page: reachable with no account, from the landing and sign-in screens. */
+function PublicHelp() {
+  return (
+    <div className="min-h-screen bg-canvas">
+      <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
+        <Link to="/" className="flex items-center gap-3 rounded-xl">
+          <BrandMark size={32} />
+          <span className="font-bold tracking-tight text-ink">New Horizon</span>
+        </Link>
+        <Link to="/register" className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-canvas">Join free</Link>
+      </header>
+      <main id="main" className="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
+        <Resources />
+      </main>
+    </div>
+  );
+}
+
+function AppShell() {
+  const { user, token, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
+  const fetchNotifications = useCallback(() => {
+    if (!token) return;
+    fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => Array.isArray(d) && setNotifications(d))
+      .catch(() => {});
+  }, [token]);
+  usePoll(fetchNotifications, 30000, !!token);
+
+  // Close the drawer and popover on navigation.
+  useEffect(() => { setIsMenuOpen(false); setShowNotifications(false); }, [location.pathname]);
+
+  // Escape closes whatever is open; a click outside closes the popover.
   useEffect(() => {
-    if (!user || !token) return;
-    const fetch_ = () =>
-      fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.json())
-        .then(d => Array.isArray(d) && setNotifications(d))
-        .catch(() => {});
-    fetch_();
-    const t = setInterval(fetch_, 20000);
-    return () => clearInterval(t);
-  }, [user, token]);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (isMenuOpen) { setIsMenuOpen(false); menuButtonRef.current?.focus(); }
+      setShowNotifications(false);
+    };
+    const onClick = (e: MouseEvent) => {
+      if (showNotifications && notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifications(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onClick); };
+  }, [isMenuOpen, showNotifications]);
 
   const handleNotifClick = async (n: AppNotification) => {
     if (!n.is_read) {
       await fetch(`/api/notifications/${n.id}/read`, {
-        method: 'PUT', headers: { Authorization: `Bearer ${token}` }
+        method: 'PUT', headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
       setNotifications(p => p.map(x => x.id === n.id ? { ...x, is_read: 1 } : x));
     }
-    if (n.link) setActiveTab(n.link as Tab);
+    if (n.link) navigate(pathFor(n.link));
     setShowNotifications(false);
   };
 
   const markAll = async () => {
     await fetch('/api/notifications/read-all', {
-      method: 'PUT', headers: { Authorization: `Bearer ${token}` }
+      method: 'PUT', headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {});
     setNotifications(p => p.map(x => ({ ...x, is_read: 1 })));
   };
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-white/60 font-medium tracking-widest text-sm uppercase">Loading New Horizon…</p>
-      </div>
-    </div>
-  );
-
-  if (!user) return <Auth />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
 
   const isAdmin = ['super_admin', 'admin', 'moderator'].includes(user?.role || (user?.is_admin === 1 ? 'super_admin' : 'user'));
   const unread = notifications.filter(n => !n.is_read).length;
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard': return <Dashboard onNavigate={setActiveTab} />;
-      case 'yard': return <TheYard />;
-      case 'kites': return <Kites />;
-      case 'groups': return <Groups />;
-      case 'forum': return <Forum />;
-      case 'stories': return <SuccessStories />;
-      case 'mentorship': return <MentorshipTab />;
-      case 'checkins': return <CheckIns />;
-      case 'journal': return <Journal />;
-      case 'resources': return <Resources />;
-      case 'opportunities': return <Opportunities />;
-      case 'tools': return <Tools />;
-      case 'cases': return <CaseTracker />;
-      case 'vault': return <Vault />;
-      case 'profile': return <Profile />;
-      case 'admin': return <AdminDashboard />;
-      case 'help': return <HelpCenter />;
-      default: return <Dashboard onNavigate={setActiveTab} />;
-    }
-  };
+  const currentName = ALL_ITEMS.find(i => ROUTES[i.id] === location.pathname)?.name
+    ?? (location.pathname === ROUTES.admin ? 'Admin Panel' : '');
+  const goTo = (tab: Tab | string) => navigate(pathFor(tab));
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex">
+    <div className="flex min-h-screen bg-canvas text-ink">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2">
+        Skip to content
+      </a>
+
       {/* ─── Sidebar ─────────────────────────────────────── */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-indigo-950 via-indigo-900 to-purple-950 text-white flex flex-col transition-transform duration-300",
-        isMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-      )}>
-        {/* Logo */}
-        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center font-black text-lg">N</div>
-            <span className="font-bold text-lg tracking-tight">New Horizon</span>
-          </div>
-          <button className="md:hidden opacity-60 hover:opacity-100" onClick={() => setIsMenuOpen(false)} aria-label="Close menu">
-            <X size={20} />
+      <aside
+        id="app-sidebar"
+        aria-label="Sections"
+        inert={!isDesktop && !isMenuOpen ? true : undefined}
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-line bg-surface text-ink transition-transform duration-300 ease-[cubic-bezier(.16,1,.3,1)]',
+          isMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        )}
+      >
+        <div className="flex items-center justify-between border-b border-line px-6 py-5">
+          <Link to={ROUTES.dashboard} className="flex items-center gap-3 rounded-xl">
+            <BrandMark size={36} />
+            <span className="text-lg font-bold tracking-tight">New Horizon</span>
+          </Link>
+          <button className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-2 hover:text-ink md:hidden" onClick={() => setIsMenuOpen(false)} aria-label="Close menu">
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
-        {/* User mini-card */}
-        <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3">
+        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
           <AvatarBubble name={user.username || 'U'} color={user.avatar_color} size={36} />
           <div className="min-w-0">
-            <p className="font-semibold text-sm truncate">{user.username}</p>
-            <p className="text-xs text-white/50 capitalize">{user.recovery_stage || 'member'}</p>
+            <p className="truncate text-sm font-semibold">{user.username}</p>
+            <p className="text-xs capitalize text-ink-3">{user.recovery_stage ? `${user.recovery_stage} stage` : 'Member'}</p>
           </div>
-          {user.is_verified === 1 && <ShieldCheck size={14} className="text-indigo-300 shrink-0" />}
+          {user.is_verified === 1 && <ShieldCheck size={14} className="shrink-0 text-accent-ink" aria-label="Verified member" />}
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-none">
+        <nav aria-label="Main" className="scrollbar-none flex-1 space-y-6 overflow-y-auto px-3 py-4">
           {NAV_SECTIONS.map(section => (
             <div key={section.label}>
-              <p className="text-[10px] uppercase tracking-[0.15em] text-white/30 font-bold px-3 mb-1">{section.label}</p>
-              {section.items.map(item => {
-                const Icon = item.icon;
-                const active = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => { setActiveTab(item.id as Tab); setIsMenuOpen(false); }}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                      active
-                        ? "bg-white/15 text-white shadow-inner"
-                        : "text-white/60 hover:text-white hover:bg-white/8"
-                    )}
-                  >
-                    <Icon size={16} className={active ? "text-indigo-300" : ""} />
-                    {item.name}
-                  </button>
-                );
-              })}
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.15em] text-ink-3">{section.label}</p>
+              <ul>
+                {section.items.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.id}>
+                      <NavLink to={ROUTES[item.id]} className={navItemClass} end>
+                        {({ isActive }) => <>
+                          <Icon size={16} aria-hidden="true" className={isActive ? 'text-dawn-1' : ''} />
+                          {item.name}
+                        </>}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           ))}
           {isAdmin && (
             <div>
-              <p className="text-[10px] uppercase tracking-[0.15em] text-white/30 font-bold px-3 mb-1">Admin</p>
-              <button
-                onClick={() => { setActiveTab('admin'); setIsMenuOpen(false); }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                  activeTab === 'admin' ? "bg-red-500/20 text-red-300" : "text-red-400/70 hover:text-red-300 hover:bg-red-500/10"
-                )}
-              >
-                <ShieldAlert size={16} /> Admin Panel
-              </button>
+              <p className="mb-1 px-3 text-[11px] font-bold uppercase tracking-[0.15em] text-ink-3">Admin</p>
+              <NavLink to={ROUTES.admin} className={({ isActive }) => cn(
+                'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                isActive ? 'bg-red-500/20 text-red-200' : 'text-red-300 hover:bg-red-500/10 hover:text-red-200',
+              )}>
+                <ShieldAlert size={16} aria-hidden="true" /> Admin Panel
+              </NavLink>
             </div>
           )}
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-white/10">
+        <div className="border-t border-line p-4">
           <button
-            onClick={logout}
-            aria-label="Sign out"
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-all text-sm"
+            onClick={async () => { await logout(); navigate('/', { replace: true }); }}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-2 transition-colors hover:bg-white/5 hover:text-ink"
           >
-            <LogOut size={16} /> Sign Out
+            <LogOut size={16} aria-hidden="true" /> Sign out
           </button>
         </div>
       </aside>
 
-      {/* Overlay */}
-      {isMenuOpen && <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setIsMenuOpen(false)} />}
+      {/* Overlay for the mobile drawer */}
+      {isMenuOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-30 bg-black/60 md:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
 
       {/* ─── Main Content ─────────────────────────────────── */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        {/* Top bar */}
-        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-slate-200 px-4 md:px-8 py-3 flex items-center justify-between">
-          <button className="md:hidden p-2 rounded-lg hover:bg-slate-100" onClick={() => setIsMenuOpen(true)} aria-label="Open menu">
-            <Menu size={20} />
+      <div className="flex min-h-screen flex-1 flex-col md:ml-64" inert={!isDesktop && isMenuOpen ? true : undefined}>
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-canvas/80 px-4 py-3 backdrop-blur-lg md:px-8">
+          <button
+            ref={menuButtonRef}
+            className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-surface-3 md:hidden"
+            onClick={() => setIsMenuOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={isMenuOpen}
+            aria-controls="app-sidebar"
+          >
+            <Menu size={20} aria-hidden="true" />
           </button>
-          <div className="hidden md:block text-sm font-semibold text-slate-500 capitalize">
-            {NAV_SECTIONS.flatMap(s => s.items).find(i => i.id === activeTab)?.name || 'Dashboard'}
-          </div>
+          <div className="hidden text-sm font-semibold text-ink-2 md:block">{currentName}</div>
           <div className="flex items-center gap-3">
-            {/* Notifications */}
-            <div className="relative">
+            <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setShowNotifications(p => !p)}
-                className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                className="relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-surface-3"
                 aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+                aria-expanded={showNotifications}
+                aria-haspopup="true"
               >
-                <Bell size={18} />
+                <Bell size={18} aria-hidden="true" />
                 {unread > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
+                  <span aria-hidden="true" className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">
                     {unread > 9 ? '9+' : unread}
                   </span>
                 )}
               </button>
               <AnimatePresence>
                 {showNotifications && (
-                  <motion.div
+                  <m.div
                     initial={{ opacity: 0, y: 8, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                    className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50"
+                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line bg-surface-2 shadow-2xl"
                   >
-                    <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                      <span className="font-semibold text-sm">Notifications</span>
-                      <button onClick={markAll} className="text-xs text-indigo-600 hover:underline">Mark all read</button>
+                    <div className="flex items-center justify-between border-b border-line p-4">
+                      <span className="text-sm font-semibold">Notifications</span>
+                      <button onClick={markAll} className="text-xs text-accent-ink hover:underline">Mark all read</button>
                     </div>
-                    <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    <div className="max-h-80 divide-y divide-line overflow-y-auto">
                       {notifications.length === 0
-                        ? <p className="p-4 text-sm text-center text-slate-400">No notifications yet</p>
+                        ? <p className="p-4 text-center text-sm text-ink-3">No notifications yet</p>
                         : notifications.map(n => (
                           <button
                             key={n.id}
                             onClick={() => handleNotifClick(n)}
-                            className={cn("w-full text-left p-3 hover:bg-slate-50 transition-colors text-sm flex gap-3 items-start", !n.is_read && "bg-indigo-50")}
+                            className={cn('flex w-full items-start gap-3 p-3 text-left text-sm transition-colors hover:bg-surface-3', !n.is_read && 'bg-accent-soft')}
                           >
-                            {!n.is_read && <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0" />}
-                            <div>
-                              <p className="text-slate-800">{n.content}</p>
-                              <p className="text-[11px] text-slate-400 mt-0.5">{new Date(n.timestamp).toLocaleDateString()}</p>
-                            </div>
+                            {!n.is_read && <span aria-label="Unread" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-dawn-2" />}
+                            <span>
+                              <span className="block text-ink">{n.content}</span>
+                              <span className="mt-0.5 block text-[11px] text-ink-3">{new Date(n.timestamp).toLocaleDateString()}</span>
+                            </span>
                           </button>
                         ))}
                     </div>
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
             </div>
-            <button onClick={() => setActiveTab('profile')} className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors" aria-label="View profile">
+            <Link to={ROUTES.profile} className="flex items-center gap-2 rounded-lg p-1 transition-colors hover:bg-surface-3" aria-label="View profile">
               <AvatarBubble name={user.username} color={user.avatar_color} size={30} />
-            </button>
+            </Link>
           </div>
         </header>
 
-        {/* Page */}
-        <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 12 }}
+        <main id="main" className="mx-auto w-full max-w-6xl flex-1 p-4 md:p-8">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <m.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             >
-              {renderContent()}
-            </motion.div>
+              <Suspense fallback={<PageSkeleton />}>
+                <Routes location={location}>
+                  <Route path={ROUTES.dashboard} element={<Dashboard onNavigate={goTo} />} />
+                  <Route path={ROUTES.yard} element={<TheYard />} />
+                  <Route path={ROUTES.kites} element={<Kites />} />
+                  <Route path={ROUTES.groups} element={<Groups />} />
+                  <Route path={ROUTES.forum} element={<Forum />} />
+                  <Route path={ROUTES.stories} element={<SuccessStories />} />
+                  <Route path={ROUTES.mentorship} element={<MentorshipTab />} />
+                  <Route path={ROUTES.checkins} element={<CheckIns />} />
+                  <Route path={ROUTES.journal} element={<Journal />} />
+                  <Route path={ROUTES.resources} element={<Resources />} />
+                  <Route path={ROUTES.opportunities} element={<Opportunities />} />
+                  <Route path={ROUTES.tools} element={<Tools />} />
+                  <Route path={ROUTES.cases} element={<CaseTracker />} />
+                  <Route path={ROUTES.vault} element={<Vault />} />
+                  <Route path={ROUTES.profile} element={<Profile />} />
+                  <Route path={ROUTES.help} element={<HelpCenter />} />
+                  <Route path={ROUTES.admin} element={isAdmin ? <AdminDashboard /> : <Navigate to={ROUTES.dashboard} replace />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </m.div>
           </AnimatePresence>
         </main>
       </div>
@@ -333,10 +402,36 @@ function MainApp() {
   );
 }
 
+function AppRoutes() {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return <FullScreenLoader />;
+
+  // Crisis help is always public, signed in or not.
+  if (location.pathname === ROUTES.resources && !user) return <PublicHelp />;
+
+  return (
+    <Routes>
+      <Route path="/" element={user ? <Navigate to={ROUTES.dashboard} replace /> : <Landing />} />
+      <Route path="/login" element={user ? <Navigate to={ROUTES.dashboard} replace /> : <Auth initialView="login" />} />
+      <Route path="/register" element={user ? <Navigate to={ROUTES.dashboard} replace /> : <Auth initialView="register" />} />
+      <Route path="/forgot-password" element={user ? <Navigate to={ROUTES.dashboard} replace /> : <Auth initialView="forgot" />} />
+      <Route path="*" element={<AppShell />} />
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <LazyMotion features={domAnimation} strict>
+      <MotionConfig reducedMotion="user">
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </MotionConfig>
+    </LazyMotion>
   );
 }
