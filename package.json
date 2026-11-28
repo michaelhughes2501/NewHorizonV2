@@ -16,6 +16,7 @@
     "@tailwindcss/vite": "^4.1.14",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vercel/speed-insights": "^2.1.1",
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",
     "clsx": "^2.1.1",
